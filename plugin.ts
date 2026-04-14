@@ -6,7 +6,10 @@ import packageJSON from "./package.json" with {type: "json"};
 
 const packageConfigSchema = z.object({
   markdown: z.object({
-    lint: z.record(z.string(), z.unknown()).prefault({})
+    lint: z.record(z.string(), z.unknown()).prefault({
+      "line-length": false,
+      "table-column-style": false
+    })
   }).prefault({})
 });
 
