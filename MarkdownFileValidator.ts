@@ -1,5 +1,5 @@
-import type {FileValidator} from "@tokenring-ai/filesystem/FileSystemService";
-import {lint} from "markdownlint/promise";
+import type { FileValidator } from "@tokenring-ai/filesystem/FileSystemService";
+import { lint } from "markdownlint/promise";
 
 type MarkdownlintIssue = {
   lineNumber: number;
@@ -8,11 +8,11 @@ type MarkdownlintIssue = {
   errorDetail: string | null;
   errorContext: string | null;
   errorRange: [number, number] | null;
-  severity?: string;
+  severity?: string | undefined;
 };
 
 export class MarkdownFileValidator implements FileValidator {
-  private readonly config: Record<string, unknown> | undefined;
+  private readonly config: Record<string, unknown>;
 
   constructor(config: Record<string, unknown>) {
     this.config = config;
@@ -28,7 +28,7 @@ export class MarkdownFileValidator implements FileValidator {
     return `${issue.lineNumber}:${column} ${severity} ${issue.ruleDescription}${detail}${context} (${rule})`;
   }
 
-  async validateFile(filePath: string, content: string) : Promise<string|null> {
+  async validateFile(filePath: string, content: string): Promise<string | null> {
     const results = await lint({
       config: this.config,
       strings: {
@@ -40,6 +40,6 @@ export class MarkdownFileValidator implements FileValidator {
 
     if (issues.length === 0) return null;
 
-    return issues.map((issue) => this.formatIssue(issue)).join("\n");
+    return issues.map(issue => this.formatIssue(issue)).join("\n");
   }
 }
