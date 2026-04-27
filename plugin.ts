@@ -1,7 +1,8 @@
 import type { TokenRingPlugin } from "@tokenring-ai/app";
-import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
+import { AgentLifecycleService } from "@tokenring-ai/lifecycle";
+import markdownFileValidator from "./hooks/markdownFileValidator.ts"
 import { z } from "zod";
-import { MarkdownFileValidator } from "./MarkdownFileValidator.ts";
+import { MarkdownService } from "./MarkdownService.ts";
 import packageJSON from "./package.json" with { type: "json" };
 
 const packageConfigSchema = z.object({
@@ -15,20 +16,17 @@ const packageConfigSchema = z.object({
     .prefault({}),
 });
 
-const MARKDOWN_EXTENSIONS = [".md", ".markdown"];
-
 export default {
   name: packageJSON.name,
   displayName: "Markdown Tooling",
   version: packageJSON.version,
   description: packageJSON.description,
   install(app, config) {
-    app.waitForService(FileSystemService, fileSystemService => {
-      const validator = new MarkdownFileValidator(config.markdown.lint);
+    app.addServices(new MarkdownService(config.markdown.lint));
 
-      for (const ext of MARKDOWN_EXTENSIONS) {
-        fileSystemService.registerFileValidator(ext, validator);
-      }
+    // Register hooks with the lifecycle service
+    app.waitForService(AgentLifecycleService, lifecycleService => {
+      lifecycleService.addHooks(markdownFileValidator);
     });
   },
   config: packageConfigSchema,

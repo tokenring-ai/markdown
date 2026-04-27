@@ -1,4 +1,5 @@
-import type { FileValidator } from "@tokenring-ai/filesystem/FileSystemService";
+import type { TokenRingService } from "@tokenring-ai/app/types";
+import type { FileValidationResult } from "@tokenring-ai/filesystem/util/runFileValidator";
 import { lint } from "markdownlint/promise";
 
 type MarkdownlintIssue = {
@@ -11,12 +12,11 @@ type MarkdownlintIssue = {
   severity?: string | undefined;
 };
 
-export class MarkdownFileValidator implements FileValidator {
-  private readonly config: Record<string, unknown>;
+export class MarkdownService implements TokenRingService {
+  readonly name = "MarkdownService";
+  readonly description = "A service that implements Markdown validation and linting using markdownlint.";
 
-  constructor(config: Record<string, unknown>) {
-    this.config = config;
-  }
+  constructor(private config: Record<string, unknown>) {}
 
   private formatIssue(issue: MarkdownlintIssue): string {
     const column = issue.errorRange?.[0] ?? 1;
@@ -28,7 +28,7 @@ export class MarkdownFileValidator implements FileValidator {
     return `${issue.lineNumber}:${column} ${severity} ${issue.ruleDescription}${detail}${context} (${rule})`;
   }
 
-  async validateFile(filePath: string, content: string): Promise<string | null> {
+  async validateFile(filePath: string, content: string): Promise<Required<FileValidationResult>> {
     const results = await lint({
       config: this.config,
       strings: {
@@ -38,8 +38,9 @@ export class MarkdownFileValidator implements FileValidator {
 
     const issues = (results[filePath] ?? []) as MarkdownlintIssue[];
 
-    if (issues.length === 0) return null;
+    if (issues.length === 0) return { valid: true, result: "No issues found." };
 
-    return issues.map(issue => this.formatIssue(issue)).join("\n");
+    const result = issues.map(issue => this.formatIssue(issue)).join("\n");
+    return { valid: false, result };
   }
 }
