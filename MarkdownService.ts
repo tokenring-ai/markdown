@@ -18,16 +18,6 @@ export class MarkdownService implements TokenRingService {
 
   constructor(private config: Record<string, unknown>) {}
 
-  private formatIssue(issue: MarkdownlintIssue): string {
-    const column = issue.errorRange?.[0] ?? 1;
-    const severity = issue.severity ?? "error";
-    const rule = issue.ruleNames.join("/");
-    const detail = issue.errorDetail ? `: ${issue.errorDetail}` : "";
-    const context = issue.errorContext ? ` (${issue.errorContext})` : "";
-
-    return `${issue.lineNumber}:${column} ${severity} ${issue.ruleDescription}${detail}${context} (${rule})`;
-  }
-
   async validateFile(filePath: string, content: string): Promise<Required<FileValidationResult>> {
     const results = await lint({
       config: this.config,
@@ -42,5 +32,15 @@ export class MarkdownService implements TokenRingService {
 
     const result = issues.map(issue => this.formatIssue(issue)).join("\n");
     return { valid: false, result };
+  }
+
+  private formatIssue(issue: MarkdownlintIssue): string {
+    const column = issue.errorRange?.[0] ?? 1;
+    const severity = issue.severity ?? "error";
+    const rule = issue.ruleNames.join("/");
+    const detail = issue.errorDetail ? `: ${issue.errorDetail}` : "";
+    const context = issue.errorContext ? ` (${issue.errorContext})` : "";
+
+    return `${issue.lineNumber}:${column} ${severity} ${issue.ruleDescription}${detail}${context} (${rule})`;
   }
 }

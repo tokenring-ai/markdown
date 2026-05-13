@@ -1,7 +1,7 @@
 import type { TokenRingPlugin } from "@tokenring-ai/app";
 import { AgentLifecycleService } from "@tokenring-ai/lifecycle";
-import markdownFileValidator from "./hooks/markdownFileValidator.ts"
 import { z } from "zod";
+import markdownFileValidator from "./hooks/markdownFileValidator.ts";
 import { MarkdownService } from "./MarkdownService.ts";
 import packageJSON from "./package.json" with { type: "json" };
 
