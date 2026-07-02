@@ -11,8 +11,8 @@
     "@tokenring-ai/app": "workspace:*",
     "@tokenring-ai/filesystem": "workspace:*",
     "@tokenring-ai/lifecycle": "workspace:*",
-    "markdownlint": "^0.40.0",
-    "zod": "^4.3.6"
+    "markdownlint": "^0.41.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "vitest": "^4.1.1",
