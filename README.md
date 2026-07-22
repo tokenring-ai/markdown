@@ -136,7 +136,6 @@ pkg/markdown/
 ├── plugin.ts                 # Plugin definition and installation
 ├── MarkdownFileValidator.ts  # Core validator implementation
 ├── package.json              # Package configuration
-├── vitest.config.ts          # Test configuration
 └── README.md                 # This documentation
 ```
 
