@@ -34,5 +34,5 @@ export default {
       lifecycleService.addHooks(markdownFileValidator);
     });
   },
-  config: packageConfigSchema,
+  configSchema: packageConfigSchema,
 } satisfies TokenRingPlugin<typeof packageConfigSchema>;
