@@ -3,17 +3,17 @@
 ## Overview
 
 The `@tokenring-ai/markdown` package provides Markdown file validation for the
-TokenRing ecosystem. It integrates with the FileSystemService to register
-`markdownlint`-based validation for Markdown files, surfacing style and
-formatting issues during file writes and edits.
+TokenRing ecosystem. It integrates with the FileSystemService and
+AgentLifecycleService to automatically validate Markdown files using
+`markdownlint`, surfacing style and formatting issues during file writes.
 
 ## Key Features
 
 - `markdownlint`-based validation for Markdown content
-- FileSystemService integration for automatic validation
-- Error reporting with line and column information
+- Automatic validation on file write via lifecycle hooks
+- Error reporting with line, column, and severity information
 - Support for `.md` and `.markdown` files
-- Automatic loading of a root `.markdownlint.json` when present
+- Configurable lint rule overrides via plugin configuration
 
 ## Installation
 
@@ -23,44 +23,85 @@ bun add @tokenring-ai/markdown
 
 ### Dependencies
 
-- `@tokenring-ai/app` (0.2.0)
-- `@tokenring-ai/filesystem` (0.2.0)
-- `markdownlint` (^0.40.0)
-- `zod` (^4.3.6)
+- `@tokenring-ai/app` (workspace:*)
+- `@tokenring-ai/filesystem` (workspace:*)
+- `@tokenring-ai/lifecycle` (workspace:*)
+- `markdownlint` (^0.41.1)
+- `zod` (^4.4.3)
+
+## Chat Commands
+
+This package does not define any chat commands.
+
+## Tools
+
+This package does not define any tools.
+
+## Configuration
+
+The plugin accepts configuration for markdownlint rule overrides:
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `markdown.lint` | `Record<string, unknown>` | `{ "line-length": false, "table-column-style": false }` | markdownlint rule overrides, keyed by rule name |
+
+### Sample Configuration
+
+```yaml
+markdown:
+  lint:
+    line-length: false
+    table-column-style: false
+    no-trailing-spaces: true
+```
 
 ## Core Components
 
-### MarkdownFileValidator
+### MarkdownService
 
-The core file validator implementation runs `markdownlint` against Markdown
-content and returns formatted issues.
+The `MarkdownService` is a TokenRingService that performs Markdown validation
+using `markdownlint`. It is registered as an app service and can be required by
+other components.
 
 **Type Signature:**
 
 ```typescript
-type FileValidator = (filePath: string, content: string) => Promise<string | null>;
+class MarkdownService implements TokenRingService {
+  readonly name: string;
+  readonly description: string;
+  constructor(config: Record<string, unknown>);
+  validateFile(filePath: string, content: string): Promise<Required<FileValidationResult>>;
+}
 ```
 
-**Supported File Extensions:**
+**Validation Result:**
 
-- `.md` - Standard Markdown files
-- `.markdown` - Alternate Markdown file extension
+```typescript
+type FileValidationResult = {
+  valid: boolean;
+  result: string;
+};
+```
 
-### Plugin
+### markdownFileValidator Hook
 
-The plugin registers Markdown file validators with the FileSystemService.
+The `markdownFileValidator` hook subscribes to the
+`FileValidatonAfterFileWrite` lifecycle event. When a Markdown file is written,
+it automatically validates the content using `MarkdownService`.
 
-**Plugin Configuration:**
+**Hook Details:**
 
-- No configuration options required
-- Automatically registers validators for all supported Markdown extensions
+- **Name**: `markdownFileValidator`
+- **Display Name**: `Markdown/Validate files after write`
+- **Supported Extensions**: `.md`, `.markdown`
+- **Trigger**: After file write operations
 
 ## Usage Examples
 
 ### Basic Plugin Installation
 
 ```typescript
-import {TokenRingApp} from "@tokenring-ai/app";
+import { TokenRingApp } from "@tokenring-ai/app";
 import markdownPlugin from "@tokenring-ai/markdown/plugin";
 
 const app = new TokenRingApp();
@@ -68,44 +109,27 @@ const app = new TokenRingApp();
 await app.install(markdownPlugin);
 ```
 
-### Manual Validator Usage
+### Manual Service Usage
 
 ```typescript
-import MarkdownFileValidator from "@tokenring-ai/markdown/MarkdownFileValidator";
+import { MarkdownService } from "@tokenring-ai/markdown";
 
-const content = `
-#Heading
+const service = new MarkdownService({
+  "line-length": false,
+  "table-column-style": false,
+});
 
-This line has trailing spaces.  
+const content = `#Heading
+
+This line has trailing spaces.
 `;
 
-const issues = await MarkdownFileValidator("README.md", content);
+const result = await service.validateFile("README.md", content);
 
-if (issues) {
-  console.log(issues);
+if (!result.valid) {
+  console.log(result.result);
 }
 ```
-
-### Integration With FileSystemService
-
-```typescript
-fileSystemService.registerFileValidator(".md", MarkdownFileValidator);
-fileSystemService.registerFileValidator(
-  ".markdown",
-  MarkdownFileValidator
-);
-```
-
-## Configuration
-
-The `@tokenring-ai/markdown` package requires no plugin configuration:
-
-```typescript
-const packageConfigSchema = z.object({});
-```
-
-If a `.markdownlint.json` file exists at the project root, it is loaded
-automatically and passed to `markdownlint`.
 
 ## Error Handling
 
@@ -114,29 +138,35 @@ The validator returns formatted lint messages with location information:
 **Error Format:**
 
 ```text
-line:column severity message (rule)
+line:column severity ruleDescription: errorDetail (errorContext) (ruleNames)
 ```
 
 **Example:**
 
 ```text
-1:2 error No space after hash on atx style heading
-  (MD018/no-missing-space-atx)
+1:1 error No space after hash on atx style heading (MD018/no-missing-space-atx)
 ```
 
-If no issues are found, the validator returns `null`.
+If no issues are found, the validator returns:
+
+```typescript
+{ valid: true, result: "No issues found." }
+```
 
 ## Development
 
 ### Package Structure
 
 ```text
-pkg/markdown/
-├── index.ts                  # Package exports
-├── plugin.ts                 # Plugin definition and installation
-├── MarkdownFileValidator.ts  # Core validator implementation
-├── package.json              # Package configuration
-└── README.md                 # This documentation
+plugin/markdown/
+├── index.ts                        # Package exports
+├── plugin.ts                       # Plugin definition and installation
+├── MarkdownService.ts              # Core validation service
+├── hooks/
+│   └── markdownFileValidator.ts    # Lifecycle hook for post-write validation
+├── package.json                    # Package configuration
+├── bun.config.ts                   # Bun test configuration
+└── README.md                       # This documentation
 ```
 
 ## License
