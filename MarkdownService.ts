@@ -16,7 +16,18 @@ export class MarkdownService implements TokenRingService {
   readonly name = "MarkdownService";
   readonly description = "A service that implements Markdown validation and linting using markdownlint.";
 
-  constructor(private config: Record<string, unknown>) {}
+  private config: Record<string, unknown> = {
+    "line-length": false,
+    "table-column-style": false,
+  };
+
+  constructor(config?: Record<string, unknown>) {
+    if (config) this.config = config;
+  }
+
+  reconfigure(config: Record<string, unknown>): void {
+    this.config = config;
+  }
 
   async validateFile(filePath: string, content: string): Promise<Required<FileValidationResult>> {
     const results = await lint({

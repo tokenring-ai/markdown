@@ -26,13 +26,16 @@ export default {
   displayName: "Markdown Tooling",
   version: packageJSON.version,
   description: packageJSON.description,
-  install(app, config) {
-    app.addServices(new MarkdownService(config.markdown.lint));
+  install(app) {
+    app.addServices(new MarkdownService());
 
     // Register hooks with the lifecycle service
     app.waitForService(AgentLifecycleService, lifecycleService => {
       lifecycleService.addHooks(markdownFileValidator);
     });
+  },
+  reconfigure(app, config) {
+    app.requireService(MarkdownService).reconfigure(config.markdown.lint);
   },
   configSchema: packageConfigSchema,
 } satisfies TokenRingPlugin<typeof packageConfigSchema>;
