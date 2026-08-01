@@ -27,7 +27,7 @@ export default {
   version: packageJSON.version,
   description: packageJSON.description,
   install(app) {
-    app.addServices(new MarkdownService());
+    app.addService(new MarkdownService());
 
     // Register hooks with the lifecycle service
     app.waitForService(AgentLifecycleService, lifecycleService => {

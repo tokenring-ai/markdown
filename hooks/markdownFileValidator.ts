@@ -12,7 +12,7 @@ const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown"]);
 const callbacks = [
   new HookCallback(FileValidatonAfterFileWrite, (data, agent) => {
     if (MARKDOWN_EXTENSIONS.has(data.fileExtension)) {
-      return agent.requireServiceByType(MarkdownService).validateFile(data.filePath, data.content);
+      return agent.requireService(MarkdownService).validateFile(data.filePath, data.content);
     }
     return null;
   }),
