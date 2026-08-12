@@ -69,8 +69,8 @@ other components.
 class MarkdownService implements TokenRingService {
   readonly name: string;
   readonly description: string;
-  constructor(config: Record<string, unknown>);
-  validateFile(filePath: string, content: string): Promise<Required<FileValidationResult>>;
+  constructor(config?: Record<string, unknown>);
+  validateFile(filePath: string, content: string): Promise<{ valid: boolean; result: string }>;
 }
 ```
 
@@ -86,7 +86,7 @@ type FileValidationResult = {
 ### markdownFileValidator Hook
 
 The `markdownFileValidator` hook subscribes to the
-`FileValidatonAfterFileWrite` lifecycle event. When a Markdown file is written,
+`FileValidationAfterFileWrite` lifecycle event. When a Markdown file is written,
 it automatically validates the content using `MarkdownService`.
 
 **Hook Details:**

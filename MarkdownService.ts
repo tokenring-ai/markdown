@@ -1,5 +1,4 @@
 import type { TokenRingService } from "@tokenring-ai/app/types";
-import type { FileValidationResult } from "@tokenring-ai/filesystem/util/runFileValidator";
 import { lint } from "markdownlint/promise";
 
 type MarkdownlintIssue = {
@@ -16,10 +15,7 @@ export class MarkdownService implements TokenRingService {
   readonly name = "MarkdownService";
   readonly description = "A service that implements Markdown validation and linting using markdownlint.";
 
-  private config: Record<string, unknown> = {
-    "line-length": false,
-    "table-column-style": false,
-  };
+  private config: Record<string, unknown> = {};
 
   constructor(config?: Record<string, unknown>) {
     if (config) this.config = config;
@@ -29,7 +25,7 @@ export class MarkdownService implements TokenRingService {
     this.config = config;
   }
 
-  async validateFile(filePath: string, content: string): Promise<Required<FileValidationResult>> {
+  async validateFile(filePath: string, content: string): Promise<{ valid: boolean; result: string }> {
     const results = await lint({
       config: this.config,
       strings: {
