@@ -1,49 +1,60 @@
 import type { TokenRingService } from "@tokenring-ai/app/types";
+import { applyFixes, type LintError } from "markdownlint";
 import { lint } from "markdownlint/promise";
 
-type MarkdownlintIssue = {
-  lineNumber: number;
-  ruleNames: string[];
-  ruleDescription: string;
-  errorDetail: string | null;
-  errorContext: string | null;
-  errorRange: [number, number] | null;
-  severity?: string | undefined;
+export type MarkdownServiceConfig = {
+  autoFix?: boolean;
+  lint?: Record<string, unknown>;
 };
 
 export class MarkdownService implements TokenRingService {
   readonly name = "MarkdownService";
   readonly description = "A service that implements Markdown validation and linting using markdownlint.";
 
-  private config: Record<string, unknown> = {};
+  private autoFix = false;
+  private lintConfig: Record<string, unknown> = {};
 
-  constructor(config?: Record<string, unknown>) {
-    if (config) this.config = config;
+  constructor(config?: MarkdownServiceConfig) {
+    if (config) this.applyConfig(config);
   }
 
-  reconfigure(config: Record<string, unknown>): void {
-    this.config = config;
+  reconfigure(config: MarkdownServiceConfig): void {
+    this.applyConfig(config);
   }
 
-  async validateFile(filePath: string, content: string): Promise<{ valid: boolean; result: string }> {
+  async validateFile(filePath: string, content: string): Promise<{ valid: boolean; result: string; content: string }> {
+    const issues = await this.lintContent(filePath, content);
+    const nextContent = this.autoFix && issues.length > 0 ? applyFixes(content, issues) : content;
+    const remaining = nextContent === content ? issues : await this.lintContent(filePath, nextContent);
+
+    if (remaining.length === 0) return { valid: true, result: "No issues found.", content: nextContent };
+
+    return {
+      valid: false,
+      result: remaining.map(issue => this.formatIssue(issue)).join("\n"),
+      content: nextContent,
+    };
+  }
+
+  private applyConfig(config: MarkdownServiceConfig): void {
+    this.autoFix = Boolean(config.autoFix);
+    this.lintConfig = config.lint ?? {};
+  }
+
+  private async lintContent(filePath: string, content: string): Promise<LintError[]> {
     const results = await lint({
-      config: this.config,
+      config: this.lintConfig,
       strings: {
         [filePath]: content,
       },
     });
 
-    const issues = (results[filePath] ?? []) as MarkdownlintIssue[];
-
-    if (issues.length === 0) return { valid: true, result: "No issues found." };
-
-    const result = issues.map(issue => this.formatIssue(issue)).join("\n");
-    return { valid: false, result };
+    return results[filePath] ?? [];
   }
 
-  private formatIssue(issue: MarkdownlintIssue): string {
+  private formatIssue(issue: LintError): string {
     const column = issue.errorRange?.[0] ?? 1;
-    const severity = issue.severity ?? "error";
+    const severity = issue.severity;
     const rule = issue.ruleNames.join("/");
     const detail = issue.errorDetail ? `: ${issue.errorDetail}` : "";
     const context = issue.errorContext ? ` (${issue.errorContext})` : "";

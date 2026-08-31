@@ -9,6 +9,10 @@ import packageJSON from "./package.json" with { type: "json" };
 const packageConfigSchema = z.object({
   markdown: z
     .object({
+      autoFix: z
+        .boolean()
+        .prefault(true)
+        .meta({ label: "Auto-apply Fixes", description: "Automatically apply automatic markdown fixes after a file is written" } satisfies ConfigFieldMeta),
       lint: z
         .record(z.string(), z.unknown())
         .prefault({
@@ -28,7 +32,7 @@ export default {
   description: packageJSON.description,
   install(app) {
     const defaults = packageConfigSchema.parse({});
-    app.addService(new MarkdownService(defaults.markdown.lint));
+    app.addService(MarkdownService, new MarkdownService(defaults.markdown));
 
     // Register hooks with the lifecycle service
     app.waitForService(AgentLifecycleService, lifecycleService => {
@@ -36,7 +40,7 @@ export default {
     });
   },
   reconfigure(app, config) {
-    app.requireService(MarkdownService).reconfigure(config.markdown.lint);
+    app.requireService(MarkdownService).reconfigure(config.markdown);
   },
   configSchema: packageConfigSchema,
 } satisfies TokenRingPlugin<typeof packageConfigSchema>;
